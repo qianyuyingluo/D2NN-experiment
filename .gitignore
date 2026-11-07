@@ -1,0 +1,24 @@
+# Python 缓存与本地环境
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# 本地数据、训练记录和权重。README 的示例图单独保存在 docs/images/。
+data/
+runs/
+refined_runs/
+output/
+d2nn_results/
+d2nn_mod97_results/
+photo_results/
+/0-9classifier/test_preview.png
+/mod97_grokking/mod97_data.npz
+*.pt
+*.pth
+
+# 操作系统文件
+Thumbs.db
+.DS_Store
