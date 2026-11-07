@@ -115,6 +115,19 @@ def metrics(intensity, target, mask):
     return shape + 0.1*(1-efficiency), shape, efficiency, power
 
 
+def save_phase_csv(path, phase, pitch):
+    # 按 y 行、x 列展开，每个位置一行，保留未折叠的原始相位权重。
+    layers, rows, cols = phase.shape
+    iy, ix = np.indices((rows, cols))
+    x_mm = (ix - (cols-1)/2)*pitch*1000
+    y_mm = (iy - (rows-1)/2)*pitch*1000
+    data = np.column_stack((iy.ravel(), ix.ravel(), x_mm.ravel(), y_mm.ravel(),
+                            phase.reshape(layers, -1).T))
+    header = ["row", "col", "x_mm", "y_mm"] + [f"plate_{i+1}_rad" for i in range(layers)]
+    np.savetxt(path, data, delimiter=",", header=",".join(header), comments="",
+               fmt=["%d", "%d", "%.12g", "%.12g"] + ["%.9g"]*layers)
+
+
 def plot_plates(phase, path):
     layers = len(phase)
     fig, axes = plt.subplots(1, layers, squeeze=False, figsize=(3.6*layers+1, 3.6),
@@ -192,6 +205,7 @@ def main():
             stage = Path(tmp)
             plot_result(model,intensity,target,eta,stage/"result.png")
             plot_plates(phase,stage/"phase_plates.png")
+            save_phase_csv(stage/"weights.csv", phase, PITCH)
             np.savez_compressed(stage/"weights.npz", phase_rad=phase, config=json.dumps(cfg),
                                 intensity=intensity.detach().cpu().numpy(), target=target.cpu().numpy(),
                                 x_m=model.x[0].cpu().numpy(), history=history,

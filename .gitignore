@@ -11,6 +11,13 @@ data/
 runs/
 refined_runs/
 output/
+# 两套装置的相位权重 CSV 随 README 发布。
+!/beam_shaping/output/
+/beam_shaping/output/*
+!/beam_shaping/output/weights.csv
+!/silhouette_shaping/output/
+/silhouette_shaping/output/*
+!/silhouette_shaping/output/weights.csv
 d2nn_results/
 d2nn_mod97_results/
 photo_results/

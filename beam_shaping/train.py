@@ -127,6 +127,19 @@ def optimize(layers, seed):
     return phase, history
 
 
+def save_phase_csv(path, phase, pitch):
+    # 按 y 行、x 列展开，每个位置一行，保留未折叠的原始相位权重。
+    layers, rows, cols = phase.shape
+    iy, ix = np.indices((rows, cols))
+    x_mm = (ix - (cols-1)/2)*pitch*1000
+    y_mm = (iy - (rows-1)/2)*pitch*1000
+    data = np.column_stack((iy.ravel(), ix.ravel(), x_mm.ravel(), y_mm.ravel(),
+                            phase.reshape(layers, -1).T))
+    header = ["row", "col", "x_mm", "y_mm"] + [f"plate_{i+1}_rad" for i in range(layers)]
+    np.savetxt(path, data, delimiter=",", header=",".join(header), comments="",
+               fmt=["%d", "%d", "%.12g", "%.12g"] + ["%.9g"]*layers)
+
+
 def plot_plates(phase, path):
     layers = len(phase)
     fig, axes = plt.subplots(1, layers, squeeze=False, figsize=(3.6*layers+1, 3.6),
@@ -172,6 +185,7 @@ def export(layers, phase, history, config, folder, prefix):
             check.phase.copy_(model.phase)
             checks[label] = numbers(check.metrics(check()))
             del check
+    save_phase_csv(folder/(prefix+"weights.csv"), phase, PITCH)
     np.savez_compressed(folder/(prefix+"weights.npz"), phase_rad=phase, config=json.dumps(config),
                         intensity=intensity.cpu().numpy(), x_m=axis, history=history,
                         history_columns="step loss shape_loss ring_efficiency screen_power interval_s total_s",
@@ -196,7 +210,7 @@ def main():
             file.replace(out/file.name)
         # 上一轮可选的层数对照和复算图已不对应本轮权重。
         import re
-        owned = r"(layers_[0-9]+_)?(weights\.npz|phase_plates\.png|ring\.png|measurements\.csv|propagation\.png|radial_profiles\.png)"
+        owned = r"(layers_[0-9]+_)?(weights\.(?:npz|csv)|phase_plates\.png|ring\.png|measurements\.csv|propagation\.png|radial_profiles\.png)"
         for file in out.iterdir():
             if file.is_file() and file.name not in ready and re.fullmatch(owned,file.name):
                 file.unlink()
