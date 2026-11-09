@@ -1,0 +1,38 @@
+{
+  "unit_cell_bottom_to_top": [
+    [
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      1,
+      1,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      1,
+      1
+    ]
+  ],
+  "period_mm": 0.254,
+  "repeats": 38,
+  "wavelength_mm": 0.00064,
+  "focal_length_mm": 200.0,
+  "beam_radius_mm": 2.5,
+  "roi_radius_mm": 0.08,
+  "zero_weight": 0.65,
+  "balance_weight": 1.0,
+  "seed": 42,
+  "restarts": 48
+}
