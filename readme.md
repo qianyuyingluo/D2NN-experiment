@@ -12,6 +12,7 @@
 | 模 97 加法 | 两个光点编码整数 → 97 个可能的和 | [训练脚本](mod97_grokking/train.py) 自行生成 9,409 个有序数对，按约 50% / 25% / 25% 划分训练、验证、测试集。[独立数据生成器](mod97_grokking/generate_data.py) 可另外导出样本。 |
 | 二值振幅全息图 | 黑白透射板 + 透镜 → 离轴剪影 | 运行 [全息图优化](binary/train.py)，读取 [目标图](binary/target.jpg)，将掩模、焦面图、效率曲线保存到 `binary/hologram_时间戳/`。 |
 | 四点分光器 | 黑白透射板 + 透镜 → 四个对称衍射点 | [棋盘格设计](binary/four_spot/design.py) 生成基准；[二值搜索](binary/four_spot/train.py) 生成优化板，并与基准比较。两个脚本都可单独运行。 |
+| 夫琅禾费衍射与双圆孔反演 | 五种孔径 → 焦面光强；一张双孔衍射图 → 孔径、中心距和方向 | 先运行[正向仿真](fraunhofer_apertures/simulate.py)，再运行[双圆孔反演](fraunhofer_apertures/train_double_hole.py)。 |
 
 ## 快速开始
 
@@ -100,6 +101,39 @@ python beam_shaping/train.py
 ![同一线性色标下的焦面光强，左侧为棋盘格，右侧为训练得到的黑白板](binary/four_spot/trained_output/comparison.png)
 
 棋盘格脚本写入 `binary/four_spot/output/`，优化脚本写入 `binary/four_spot/trained_output/`。打印[优化板 SVG](binary/four_spot/trained_output/mask_1to1.svg) 或 [PNG](binary/four_spot/trained_output/mask_1to1.png) 时选 **100% 实际尺寸**，关闭适应页面，并核对图案边长。优化板最小格宽为 0.0635 mm，对应 1200 dpi 下的 3 个打印点；实际对比度和效率取决于胶片透过率、墨层遮光和打印精度。
+
+## 夫琅禾费衍射与双圆孔反演
+
+这项实验先从已知孔径计算屏上的衍射图，再尝试只用其中一张图恢复双圆孔的几何尺寸。640 nm 均匀平面波正入射到孔径板，光屏位于会聚透镜后焦面，距透镜 200 mm。屏上两个坐标轴的采样范围均为 −3.2 至 +3.2 mm，间隔 0.01 mm，共 641 × 641 个点。
+
+![夫琅禾费实验的侧视光路：平面波经过可更换孔径和会聚透镜，在后焦面记录光强](docs/images/fraunhofer/optical_path.png)
+
+**从孔形看衍射。** 下列两图的列顺序相同，可以对照观察。单缝和双缝都设为有限高 1.00 mm，因此竖直方向也有衍射。圆孔形成同心环；把同一个圆孔复制成两个并水平分开后，圆形包络内出现竖向干涉条纹。包络大小与孔径有关，条纹间距与两孔中心距有关。
+
+![五块孔径板正视图，白色透光；从左到右为单缝、双缝、矩形孔、圆孔和双圆孔](docs/images/fraunhofer/aperture_shapes.png)
+
+![相同顺序下的五种焦面光强，各图按自身峰值作 −40 至 0 dB 显示，以便观察旁瓣和暗环](docs/images/fraunhofer/overview_db.png)
+
+**从衍射图恢复双孔。** 反演预先假设两个圆孔等大、互不重叠，中点在光轴上。从直径 0.27 mm、中心距 0.60 mm、倾角 12° 起步，PyTorch 调整这三个参数，使预测的焦面光强与输入图匹配。训练读取原始线性光强与毫米坐标，默认比较光强的平方根，让弱条纹也参与拟合。dB 色标仅用于显示。
+
+| 双孔参数 | 生成输入图时的设定 | 1,500 步后的拟合结果 |
+|---|---:|---:|
+| 单孔直径 | 0.2000 mm | 0.2000 mm |
+| 两孔中心距 | 0.4800 mm | 0.4800 mm |
+| 连线方向（以 180° 为周期） | 0° | ≈ 0° |
+
+![双圆孔反演结果：左为输入的模拟衍射图，中为拟合光强，右为反推出的两个圆孔](docs/images/fraunhofer/reconstruction.png)
+
+这次无噪声仿真中，拟合结果与输入在全分辨率线性光强上的相对 L2 误差为 **6.78 × 10⁻⁷**。该结果验证了已知双圆孔模型下的参数恢复，精度对应本次合成数据。
+
+**复现方法。** 在 IDLE 依次打开以下两个脚本并按 F5，或从项目根目录运行：
+
+```bash
+python fraunhofer_apertures/simulate.py
+python fraunhofer_apertures/train_double_hole.py
+```
+
+第一步在 `fraunhofer_apertures/output/` 写出原始光强 `screen_data.npz` 和用于核对的 `parameters.json`。第二步在 `double_hole_inverse/` 写出拟合参数 `geometry.json`、迭代记录 `history.csv`、拟合光强 `fit.npz` 和对比图 `reconstruction.png`。要重画上面的孔形和对数衍射图，可分别运行[孔径绘图脚本](fraunhofer_apertures/plot_apertures.py)和[dB 绘图脚本](fraunhofer_apertures/plot_db.py)。
 
 ## D²NN 擅长什么？
 
