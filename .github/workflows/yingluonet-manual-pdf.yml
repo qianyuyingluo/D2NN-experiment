@@ -1,0 +1,37 @@
+name: Build YingluoNet manual PDF
+
+on:
+  push:
+    branches:
+      - docs/yingluonet-v1-1-manual
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  compile-manual:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Compile Chinese LaTeX with XeLaTeX
+        uses: xu-cheng/latex-action@v3
+        with:
+          root_file: YingluoNet_v1.1_structure_manual.tex
+          working_directory: docs/YingluoNet/v1.1
+          latexmk_use_xelatex: true
+          args: -pdf -xelatex -interaction=nonstopmode -halt-on-error -file-line-error
+      - name: Commit PDF into the same PR branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/YingluoNet/v1.1/YingluoNet_v1.1_structure_manual.pdf
+          if git diff --cached --quiet; then
+            echo "PDF unchanged"
+          else
+            git commit -m "docs: compile YingluoNet manual PDF"
+            git push
+          fi
